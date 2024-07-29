@@ -1,0 +1,18 @@
+{
+    "name": "Benchmark.Morpeh",
+    "rootNamespace": "Benchmark.Morpeh",
+    "references": [
+        "Benchmark.Core",
+        "Scellecs.Morpeh",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
