@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using Benchmark.Core;
+using Benchmark.Core.Algorithms;
 using Benchmark.Core.Components;
 using Benchmark.Core.Random;
 using Scellecs.Morpeh;
@@ -262,21 +263,19 @@ public class ContextMorpeh : ContextBase
 
 		public void OnUpdate(float deltaTime)
 		{
-			var count   = _filter.GetLengthSlow();
-			var keys    = ArrayPool<uint>.Shared.Rent(count);
-			var targets = ArrayPool<Target<Entity>>.Shared.Rent(count);
+			var count       = _filter.GetLengthSlow();
+			var keys        = ArrayPool<uint>.Shared.Rent(count);
+			var indirection = ArrayPool<int>.Shared.Rent(count);
+			var targets     = ArrayPool<Target<Entity>>.Shared.Rent(count);
 			FillTargets(keys, targets);
-			Array.Sort(
-				keys,
-				targets,
-				0,
-				count);
-			CreateAttacks(targets, count);
+			RadixSort.SortWithIndirection(keys, indirection, count);
 			ArrayPool<uint>.Shared.Return(keys);
+			CreateAttacks(indirection, targets.AsSpan(0, count));
+			ArrayPool<int>.Shared.Return(indirection);
 			ArrayPool<Target<Entity>>.Shared.Return(targets);
 		}
 
-		private void FillTargets(uint[] keys, Target<Entity>[] targets)
+		private void FillTargets(Span<uint> keys, Span<Target<Entity>> targets)
 		{
 			var i = 0;
 			foreach (var entity in _filter)
@@ -291,8 +290,9 @@ public class ContextMorpeh : ContextBase
 			}
 		}
 
-		private void CreateAttacks(Target<Entity>[] targets, int count)
+		private void CreateAttacks(ReadOnlySpan<int> indirection, ReadOnlySpan<Target<Entity>> targets)
 		{
+			var count = targets.Length;
 			foreach (var entity in _filter)
 			{
 				ref readonly var damage = ref _damageStash.Get(entity)
@@ -312,7 +312,7 @@ public class ContextMorpeh : ContextBase
 															  .V;
 				var generator    = new RandomGenerator(unit.Seed);
 				var index        = generator.Random(ref unit.Counter, count);
-				var target       = targets[index];
+				var target       = targets[indirection[index]];
 				var attackEntity = World.CreateEntity();
 				_attackStash.Add(attackEntity) = new Attack<Entity>
 				{
