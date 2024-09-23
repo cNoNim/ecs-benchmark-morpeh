@@ -357,20 +357,15 @@ public class ContextMorpeh : ContextBase
 				if (attack.Ticks-- > 0)
 					continue;
 
-				var target       = attack.Target;
-				var attackDamage = attack.Damage;
-
+				if (_filter.Has(attack.Target))
+				{
+					ref var health = ref _healthStash.Get(attack.Target)
+													 .V;
+					ref readonly var damage = ref _damageStash.Get(attack.Target)
+															  .V;
+					ApplyDamageSequential(ref health, in damage, in attack);
+				}
 				World.RemoveEntity(entity);
-
-				if (!_filter.Has(target))
-					continue;
-
-				ref var health = ref _healthStash.Get(target)
-												 .V;
-				ref readonly var damage = ref _damageStash.Get(target)
-														  .V;
-				var totalDamage = attackDamage - damage.Defence;
-				health.Hp -= totalDamage;
 			}
 		}
 	}
